@@ -225,3 +225,15 @@ input {
     border: 1px solid var(--border-soft);
     font-size: 16px;
 }
+
+/* ===== CART SCROLL FIX ===== */
+.cart {
+    background: #fff;
+    width: 100%;
+    max-width: 520px;
+    max-height: 85vh;          /* ВАЖНО */
+    border-radius: 26px 26px 0 0;
+    padding: 22px;
+    overflow-y: auto;          /* ВКЛЮЧАЕМ СКРОЛЛ */
+    -webkit-overflow-scrolling: touch;
+}
