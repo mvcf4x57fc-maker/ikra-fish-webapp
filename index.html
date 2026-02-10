@@ -3,25 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <title>Икра & Рыба</title>
+
+  <!-- ВАЖНО для Telegram -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header>Икра & Рыба</header>
+<header class="header">
+  <h1>Икра & Рыба</h1>
+  <div class="subtitle">Свежая рыба и икра с доставкой</div>
+</header>
 
-<section id="catalog"></section>
-
-<section class="order">
-  <h2>Оформление заказа</h2>
-
-  <input id="name" placeholder="Имя">
-  <input id="phone" placeholder="Телефон">
-  <input id="address" placeholder="Адрес">
-
-  <button onclick="sendOrder()">Отправить заказ</button>
-
-  <pre id="result"></pre>
-</section>
+<main>
+  <!-- Каталог -->
+  <section id="catalog" class="catalog"></section>
+</main>
 
 <script src="./script.js"></script>
 </body>
