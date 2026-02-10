@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
     tgUser = window.Telegram.WebApp.initDataUnsafe.user;
   }
 
-  // ===== CATALOG (MOCK) =====
+  // ===== CATALOG =====
   fetch("catalog.json")
     .then(res => res.json())
     .then(data => {
@@ -69,17 +69,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ===== CART =====
   window.addToCart = function (name, price) {
-
     if (name.includes("1/2 пласта") && !halfSlabNoticeShown) {
       alert("⚠️ Без возможности выбора головной или хвостовой части");
       halfSlabNoticeShown = true;
     }
 
-    if (!cart[name]) {
-      cart[name] = { price, qty: 1 };
-    } else {
-      cart[name].qty += 1;
-    }
+    if (!cart[name]) cart[name] = { price, qty: 1 };
+    else cart[name].qty += 1;
 
     updateCartButton();
   };
@@ -135,10 +131,19 @@ document.addEventListener("DOMContentLoaded", function () {
     overlay.innerHTML = `
       <div class="cart">
         <h3>Ваш заказ</h3>
+
         ${itemsHtml || "<p>Корзина пустая</p>"}
+
         <div class="cart-total">Итого: ${total} ₽</div>
-        <div class="notice">MOCK-режим (без отправки)</div>
-        <br>
+
+        <div class="order-form">
+          <input id="order-name" placeholder="Ваше имя" value="${tgUser?.first_name || ""}">
+          <input id="order-phone" placeholder="Телефон">
+          <input id="order-address" placeholder="Адрес доставки">
+        </div>
+
+        ${MOCK_MODE ? `<div class="notice">MOCK-режим (без отправки)</div>` : ""}
+
         <button onclick="confirmOrder()">Оформить заказ</button>
         <button class="secondary" onclick="clearCart()">Очистить</button>
         <br><br>
@@ -175,26 +180,39 @@ document.addEventListener("DOMContentLoaded", function () {
     if (overlay) overlay.remove();
   };
 
-  // ===== CONFIRM (MOCK) =====
+  // ===== CONFIRM ORDER =====
   window.confirmOrder = function () {
-    let summary = "MOCK ЗАКАЗ:\n\n";
+    const name = document.getElementById("order-name")?.value.trim();
+    const phone = document.getElementById("order-phone")?.value.trim();
+    const address = document.getElementById("order-address")?.value.trim();
+
+    if (!name || !phone || !address) {
+      alert("Пожалуйста, заполните имя, телефон и адрес");
+      return;
+    }
+
+    let summary = "Подтвердите заказ:\n\n";
     let total = 0;
 
-    for (const name in cart) {
-      const i = cart[name];
-      summary += `${name} × ${i.qty} = ${i.price * i.qty} ₽\n`;
-      total += i.price * i.qty;
+    for (const item in cart) {
+      summary += `${item} × ${cart[item].qty} = ${cart[item].price * cart[item].qty} ₽\n`;
+      total += cart[item].price * cart[item].qty;
     }
 
-    summary += `\nИтого: ${total} ₽`;
+    summary += `\n${name}\n${phone}\n${address}`;
+    summary += `\n\nИтого: ${total} ₽`;
 
-    if (confirm(summary)) {
+    if (!confirm(summary)) return;
+
+    if (MOCK_MODE) {
       alert("✅ MOCK: заказ принят (ничего не отправляли)");
       cart = {};
-      halfSlabNoticeShown = false;
       updateCartButton();
       closeCart();
+      return;
     }
+
+    // 👉 тут позже будет реальный fetch на backend
   };
 
 });
