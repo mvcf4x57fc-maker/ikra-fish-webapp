@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Админка</title>
+</head>
+<body>
+
+<h1>Админка</h1>
+
+<h2>Добавить категорию</h2>
+<input id="newCategory" placeholder="Название категории">
+<button onclick="addCategory()">Добавить</button>
+
+<h2>Удалить категорию</h2>
+<input id="delCategory" placeholder="Название категории">
+<button onclick="deleteCategory()">Удалить</button>
+
+<h2>Добавить товар</h2>
+<input id="itemCategory" placeholder="Категория">
+<input id="itemName" placeholder="Название">
+<input id="itemPrice" type="number" placeholder="Цена">
+<select id="itemSource">
+  <option value="ПО">ПО</option>
+  <option value="ПР">ПР</option>
+</select>
+<button onclick="addProduct()">Добавить</button>
+
+<h2>Обновить товар</h2>
+<input id="updCategory" placeholder="Категория">
+<input id="updName" placeholder="Название">
+<input id="updPrice" type="number" placeholder="Новая цена">
+<label>
+  <input type="checkbox" id="updAvailable" checked>
+  В наличии
+</label>
+<button onclick="updateProduct()">Обновить</button>
+
+<h2>Удалить товар</h2>
+<input id="delProdCategory" placeholder="Категория">
+<input id="delProdName" placeholder="Название товара">
+<button onclick="deleteProduct()">Удалить</button>
+
+<pre id="result"></pre>
+
+<script>
+const API = "http://127.0.0.1:8000";
+
+function show(data) {
+  document.getElementById("result").textContent =
+    JSON.stringify(data, null, 2);
+}
+
+function addCategory() {
+  fetch(API + "/admin/category", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: document.getElementById("newCategory").value
+    })
+  })
+  .then(r => r.json())
+  .then(show);
+}
+
+function deleteCategory() {
+  const name = document.getElementById("delCategory").value;
+  fetch(API + "/admin/category/" + encodeURIComponent(name), {
+    method: "DELETE"
+  })
+  .then(r => r.json())
+  .then(show);
+}
+
+function addProduct() {
+  fetch(API + "/admin/product", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      category: document.getElementById("itemCategory").value,
+      product: {
+        name: document.getElementById("itemName").value,
+        price: Number(document.getElementById("itemPrice").value),
+        source: document.getElementById("itemSource").value,
+        available: true
+      }
+    })
+  })
+  .then(r => r.json())
+  .then(show);
+}
+
+function updateProduct() {
+  fetch(API + "/admin/product", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      category: document.getElementById("updCategory").value,
+      name: document.getElementById("updName").value,
+      price: Number(document.getElementById("updPrice").value),
+      available: document.getElementById("updAvailable").checked
+    })
+  })
+  .then(r => r.json())
+  .then(show);
+}
+
+function deleteProduct() {
+  const category = document.getElementById("delProdCategory").value;
+  const name = document.getElementById("delProdName").value;
+
+  fetch(
+    API + "/admin/product?category=" +
+    encodeURIComponent(category) +
+    "&name=" +
+    encodeURIComponent(name),
+    { method: "DELETE" }
+  )
+  .then(r => r.json())
+  .then(show);
+}
+</script>
+
+</body>
+</html>
