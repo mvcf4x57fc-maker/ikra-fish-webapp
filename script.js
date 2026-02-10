@@ -1,13 +1,11 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-  console.log("SCRIPT LOADED");
+  console.log("SCRIPT LOADED (MOCK MODE)");
 
-  const API = "http://127.0.0.1:8000";
+  // ===== MOCK MODE =====
+  const MOCK_MODE = true;
 
-  // cart = { "Товар": { price: 1000, qty: 2 } }
   let cart = {};
-
-  // уведомление про 1/2 пласта
   let halfSlabNoticeShown = false;
 
   // ===== TELEGRAM =====
@@ -17,8 +15,8 @@ document.addEventListener("DOMContentLoaded", function () {
     tgUser = window.Telegram.WebApp.initDataUnsafe.user;
   }
 
-  // ===== CATALOG =====
-  fetch(API + "/catalog")
+  // ===== CATALOG (MOCK) =====
+  fetch("catalog.json")
     .then(res => res.json())
     .then(data => {
       const catalog = document.getElementById("catalog");
@@ -139,7 +137,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <h3>Ваш заказ</h3>
         ${itemsHtml || "<p>Корзина пустая</p>"}
         <div class="cart-total">Итого: ${total} ₽</div>
-        <div class="notice">Стоимость предварительная</div>
+        <div class="notice">MOCK-режим (без отправки)</div>
         <br>
         <button onclick="confirmOrder()">Оформить заказ</button>
         <button class="secondary" onclick="clearCart()">Очистить</button>
@@ -177,9 +175,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (overlay) overlay.remove();
   };
 
-  // ===== CONFIRM =====
+  // ===== CONFIRM (MOCK) =====
   window.confirmOrder = function () {
-    let summary = "Подтвердите заказ:\n\n";
+    let summary = "MOCK ЗАКАЗ:\n\n";
     let total = 0;
 
     for (const name in cart) {
@@ -190,42 +188,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     summary += `\nИтого: ${total} ₽`;
 
-    if (confirm(summary)) sendOrder();
-  };
-
-  // ===== ORDER =====
-  window.sendOrder = function () {
-    const cartArray = [];
-
-    for (const name in cart) {
-      for (let i = 0; i < cart[name].qty; i++) {
-        cartArray.push({ name, price: cart[name].price });
-      }
+    if (confirm(summary)) {
+      alert("✅ MOCK: заказ принят (ничего не отправляли)");
+      cart = {};
+      halfSlabNoticeShown = false;
+      updateCartButton();
+      closeCart();
     }
-
-    const order = {
-      name: document.getElementById("name").value,
-      phone: document.getElementById("phone").value,
-      address: document.getElementById("address").value,
-      tg_id: tgUser?.id || null,
-      tg_username: tgUser?.username || null,
-      tg_name: tgUser?.first_name || null,
-      cart: cartArray
-    };
-
-    fetch(API + "/order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(order)
-    })
-      .then(() => {
-        alert("Заказ отправлен ✅");
-        cart = {};
-        halfSlabNoticeShown = false;
-        updateCartButton();
-        closeCart();
-      })
-      .catch(err => console.error("ORDER ERROR:", err));
   };
 
 });
