@@ -210,3 +210,18 @@ input {
     font-size: 16px;
     margin-bottom: 12px;
 }
+
+/* ===== ORDER FORM IN CART ===== */
+.order-form {
+    margin: 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.order-form input {
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px solid var(--border-soft);
+    font-size: 16px;
+}
