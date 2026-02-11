@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
   console.log("SCRIPT LOADED (PRODUCTION)");
 
   // ===== НАСТРОЙКИ =====
-  const API = "http://79.174.82.221:8000"; // VPS backend
+  const API = "https://diamonds-bicycle-transaction-manufacturers.trycloudflare.com"; // VPS backend
 
   let cart = {};
   let halfSlabNoticeShown = false;
