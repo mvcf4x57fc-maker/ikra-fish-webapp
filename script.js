@@ -1,213 +1,182 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-  console.log("SCRIPT LOADED (PRODUCTION)");
+  console.log("SCRIPT LOADED (PRODUCTION)");
 
-  // ===== НАСТРОЙКИ =====
-  const API = "https://tribal-rather-bras-crucial.trycloudflare.com"; // VPS backend
+  // ===== API =====
+  const API = "https://tribal-rather-bras-crucial.trycloudflare.com";
 
-  let cart = {};
-  let halfSlabNoticeShown = false;
+  let cart = {};
+  let halfSlabNoticeShown = false;
 
-  // ===== TELEGRAM =====
-  let tgUser = null;
-  if (window.Telegram && window.Telegram.WebApp) {
-    window.Telegram.WebApp.ready();
-    tgUser = window.Telegram.WebApp.initDataUnsafe.user;
-  }
+  // ===== TELEGRAM =====
+  let tgUser = null;
+  if (window.Telegram && window.Telegram.WebApp) {
+    window.Telegram.WebApp.ready();
+    tgUser = window.Telegram.WebApp.initDataUnsafe.user;
+  }
 
-  // ===== CATALOG (STATIC FROM GITHUB) =====
-  fetch("catalog.json")
-    .then(res => res.json())
-    .then(data => {
-      const catalog = document.getElementById("catalog");
-      if (!catalog) return;
+  // ===== CATALOG =====
+  fetch(API + "/catalog")
+    .then(res => res.json())
+    .then(data => {
+      const catalog = document.getElementById("catalog");
+      catalog.innerHTML = "";
 
-      catalog.innerHTML = "";
+      for (const category in data) {
+        const block = document.createElement("div");
+        block.className = "category";
 
-      for (const category in data) {
-        const block = document.createElement("div");
-        block.className = "category";
+        block.innerHTML = `
+          <div class="category-title">
+            <span class="category-icon">🐟</span>
+            <h2>${category}</h2>
+          </div>
+        `;
 
-        block.innerHTML = `
-          <div class="category-title">
-            <span class="category-icon">🐟</span>
-            <h2>${category}</h2>
-          </div>
-        `;
+        data[category].forEach(item => {
+          block.innerHTML += `
+            <div class="product">
+              <div class="product-info">
+                <div class="product-name">${item.name}</div>
+                <div class="product-price">${item.price} ₽</div>
+              </div>
+              <button onclick="addToCart('${item.name}', ${item.price})">
+                В корзину
+              </button>
+            </div>
+          `;
+        });
 
-        data[category].forEach(item => {
-          if (!item.available) {
-            block.innerHTML += `
-              <div class="product disabled">
-                <div class="product-info">
-                  <div class="product-name">${item.name}</div>
-                  <div class="product-desc">Временно нет в наличии</div>
-                </div>
-              </div>
-            `;
-            return;
-          }
+        catalog.appendChild(block);
+      }
+    })
+    .catch(() => alert("Ошибка загрузки каталога"));
 
-          block.innerHTML += `
-            <div class="product">
-              <div class="product-info">
-                <div class="product-name">${item.name}</div>
-                <div class="product-price">${item.price} ₽</div>
-              </div>
-              <button onclick="addToCart('${item.name}', ${item.price})">
-                В корзину
-              </button>
-            </div>
-          `;
-        });
+  // ===== CART =====
+  window.addToCart = function (name, price) {
+    if (name.includes("1/2 пласта") && !halfSlabNoticeShown) {
+      alert("⚠️ Без возможности выбора головной или хвостовой части");
+      halfSlabNoticeShown = true;
+    }
 
-        catalog.appendChild(block);
-      }
-    })
-    .catch(() => alert("Ошибка загрузки каталога"));
+    if (!cart[name]) cart[name] = { price, qty: 1 };
+    else cart[name].qty += 1;
 
-  // ===== CART =====
-  window.addToCart = function (name, price) {
-    if (name.includes("1/2 пласта") && !halfSlabNoticeShown) {
-      alert("⚠️ Без возможности выбора головной или хвостовой части");
-      halfSlabNoticeShown = true;
-    }
+    updateCartButton();
+  };
 
-    if (!cart[name]) cart[name] = { price, qty: 1 };
-    else cart[name].qty++;
+  function updateCartButton() {
+    let btn = document.getElementById("cart-button");
+    const count = Object.values(cart).reduce((s, i) => s + i.qty, 0);
 
-    updateCartButton();
-  };
+    if (!count) {
+      if (btn) btn.remove();
+      return;
+    }
 
-  function updateCartButton() {
-    let btn = document.getElementById("cart-button");
-    const count = Object.values(cart).reduce((s, i) => s + i.qty, 0);
+    if (!btn) {
+      btn = document.createElement("button");
+      btn.id = "cart-button";
+      btn.className = "cart-button";
+      btn.onclick = openCart;
+      document.body.appendChild(btn);
+    }
 
-    if (count === 0) {
-      if (btn) btn.remove();
-      return;
-    }
+    btn.innerText = `Корзина (${count})`;
+  }
 
-    if (!btn) {
-      btn = document.createElement("button");
-      btn.id = "cart-button";
-      btn.className = "cart-button";
-      btn.onclick = openCart;
-      document.body.appendChild(btn);
-    }
+  function openCart() {
+    let overlay = document.getElementById("cart-overlay");
+    if (overlay) overlay.remove();
 
-    btn.innerText = `Корзина (${count})`;
-  }
+    let items = "";
+    let total = 0;
 
-  function openCart() {
-    let overlay = document.getElementById("cart-overlay");
-    if (overlay) overlay.remove();
+    for (const name in cart) {
+      const i = cart[name];
+      total += i.price * i.qty;
+      items += `
+        <div class="cart-item">
+          <span>${name}</span>
+          <div>
+            <button onclick="changeQty('${name}', -1)">−</button>
+            <strong>${i.qty}</strong>
+            <button onclick="changeQty('${name}', 1)">+</button>
+          </div>
+        </div>
+      `;
+    }
 
-    overlay = document.createElement("div");
-    overlay.id = "cart-overlay";
-    overlay.className = "cart-modal active";
+    overlay = document.createElement("div");
+    overlay.id = "cart-overlay";
+    overlay.className = "cart-modal active";
+    overlay.innerHTML = `
+      <div class="cart">
+        <h3>Ваш заказ</h3>
 
-    let total = 0;
-    let itemsHtml = "";
+        <div style="max-height:40vh;overflow-y:auto">
+          ${items}
+        </div>
 
-    for (const name in cart) {
-      const item = cart[name];
-      total += item.price * item.qty;
+        <div class="cart-total">Итого: ${total} ₽</div>
 
-      itemsHtml += `
-        <div class="cart-item">
-          <span>${name}</span>
-          <div>
-            <button onclick="changeQty('${name}', -1)">−</button>
-            <strong>${item.qty}</strong>
-            <button onclick="changeQty('${name}', 1)">+</button>
-            <button onclick="removeItem('${name}')">✕</button>
-          </div>
-        </div>
-      `;
-    }
+        <input id="order-name" placeholder="Имя" value="${tgUser?.first_name || ""}">
+        <input id="order-phone" placeholder="Телефон">
+        <input id="order-address" placeholder="Адрес">
 
-    overlay.innerHTML = `
-      <div class="cart">
-        <h3>Ваш заказ</h3>
+        <button onclick="confirmOrder()">Оформить заказ</button>
+        <button class="secondary" onclick="closeCart()">Закрыть</button>
+      </div>
+    `;
 
-        <div style="max-height: 40vh; overflow-y: auto;">
-          ${itemsHtml || "<p>Корзина пустая</p>"}
-        </div>
+    document.body.appendChild(overlay);
+  }
 
-        <div class="cart-total">Итого: ${total} ₽</div>
+  window.changeQty = function (name, d) {
+    cart[name].qty += d;
+    if (cart[name].qty <= 0) delete cart[name];
+    updateCartButton();
+    openCart();
+  };
 
-        <div class="order-form">
-          <input id="order-name" placeholder="Имя" value="${tgUser?.first_name || ""}">
-          <input id="order-phone" placeholder="Телефон">
-          <input id="order-address" placeholder="Адрес доставки">
-        </div>
+  window.closeCart = function () {
+    document.getElementById("cart-overlay")?.remove();
+  };
 
-        <button onclick="confirmOrder()">Оформить заказ</button>
-        <button class="secondary" onclick="clearCart()">Очистить</button>
-        <br><br>
-        <button class="secondary" onclick="closeCart()">Закрыть</button>
-      </div>
-    `;
+  // ===== SEND ORDER =====
+  window.confirmOrder = function () {
+    const name = order-name.value.trim();
+    const phone = order-phone.value.trim();
+    const address = order-address.value.trim();
 
-    document.body.appendChild(overlay);
-  }
+    if (!name || !phone || !address) {
+      alert("Заполните все поля");
+      return;
+    }
 
-  window.changeQty = function (name, delta) {
-    cart[name].qty += delta;
-    if (cart[name].qty <= 0) delete cart[name];
-    updateCartButton();
-    openCart();
-  };
+    const cartData = Object.entries(cart).map(([n, i]) => ({
+      name: n,
+      qty: i.qty
+    }));
 
-  window.removeItem = function (name) {
-    delete cart[name];
-    updateCartButton();
-    openCart();
-  };
-
-  window.clearCart = function () {
-    if (!confirm("Очистить корзину?")) return;
-    cart = {};
-    updateCartButton();
-    closeCart();
-  };
-
-  window.closeCart = function () {
-    const overlay = document.getElementById("cart-overlay");
-    if (overlay) overlay.remove();
-  };
-
-  // ===== SEND ORDER (REAL) =====
-  window.confirmOrder = function () {
-    const name = document.getElementById("order-name").value.trim();
-    const phone = document.getElementById("order-phone").value.trim();
-    const address = document.getElementById("order-address").value.trim();
-
-    if (!name || !phone || !address) {
-      alert("Заполните имя, телефон и адрес");
-      return;
-    }
-
-    const items = Object.keys(cart).map(k => ({
-      name: k,
-      price: cart[k].price,
-      qty: cart[k].qty
-    }));
-
-    fetch(API + "/order", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone, address, items })
-    })
-      .then(res => {
-        if (!res.ok) throw new Error();
-        alert("Заказ отправлен ✅");
-        cart = {};
-        updateCartButton();
-        closeCart();
-      })
-      .catch(() => alert("Ошибка отправки заказа"));
-  };
+    fetch(API + "/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name, phone, address,
+        cart: cartData,
+        tg_id: tgUser?.id,
+        tg_username: tgUser?.username,
+        tg_name: tgUser?.first_name
+      })
+    })
+    .then(() => {
+      alert("Заказ отправлен ✅");
+      cart = {};
+      updateCartButton();
+      closeCart();
+    })
+    .catch(() => alert("Ошибка отправки"));
+  };
 
 });
