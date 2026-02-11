@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
   console.log("SCRIPT LOADED (PRODUCTION)");
 
   // ===== НАСТРОЙКИ =====
-  const API = "https://consistent-tuition-coffee-anniversary.trycloudflare.com"; // VPS backend
+  const API = "https://tribal-rather-bras-crucial.trycloudflare.com"; // VPS backend
 
   let cart = {};
   let halfSlabNoticeShown = false;
