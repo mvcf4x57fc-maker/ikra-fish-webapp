@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
   console.log("SCRIPT LOADED (PRODUCTION)");
 
   // ===== НАСТРОЙКИ =====
-  const API = "https://diamonds-bicycle-transaction-manufacturers.trycloudflare.com"; // VPS backend
+  const API = "https://consistent-tuition-coffee-anniversary.trycloudflare.com"; // VPS backend
 
   let cart = {};
   let halfSlabNoticeShown = false;
