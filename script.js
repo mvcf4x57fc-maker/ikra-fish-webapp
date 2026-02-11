@@ -1,9 +1,10 @@
 document.addEventListener("DOMContentLoaded", function () {
 
-  console.log("SCRIPT LOADED (MOCK MODE)");
+  console.log("SCRIPT LOADED (LIVE MODE)");
 
-  // ===== MOCK MODE =====
-  const MOCK_MODE = true;
+  // ===== НАСТРОЙКИ =====
+  const API = "http://79.174.82.221:8000"; // твой VPS
+  const MOCK_MODE = false;
 
   let cart = {};
   let halfSlabNoticeShown = false;
@@ -15,14 +16,13 @@ document.addEventListener("DOMContentLoaded", function () {
     tgUser = window.Telegram.WebApp.initDataUnsafe.user;
   }
 
-  // ===== CATALOG =====
-  fetch("catalog.json")
+  // ===== CATALOG (REAL BACKEND) =====
+  fetch(API + "/catalog")
     .then(res => res.json())
     .then(data => {
       const catalog = document.getElementById("catalog");
       if (!catalog) return;
 
-      catalog.className = "catalog";
       catalog.innerHTML = "";
 
       for (const category in data) {
@@ -65,7 +65,10 @@ document.addEventListener("DOMContentLoaded", function () {
         catalog.appendChild(block);
       }
     })
-    .catch(err => console.error("CATALOG ERROR:", err));
+    .catch(err => {
+      console.error("CATALOG ERROR:", err);
+      alert("Ошибка загрузки каталога");
+    });
 
   // ===== CART =====
   window.addToCart = function (name, price) {
@@ -132,17 +135,17 @@ document.addEventListener("DOMContentLoaded", function () {
       <div class="cart">
         <h3>Ваш заказ</h3>
 
-        ${itemsHtml || "<p>Корзина пустая</p>"}
+        <div style="max-height: 40vh; overflow-y: auto;">
+          ${itemsHtml || "<p>Корзина пустая</p>"}
+        </div>
 
         <div class="cart-total">Итого: ${total} ₽</div>
 
         <div class="order-form">
-          <input id="order-name" placeholder="Ваше имя" value="${tgUser?.first_name || ""}">
+          <input id="order-name" placeholder="Имя" value="${tgUser?.first_name || ""}">
           <input id="order-phone" placeholder="Телефон">
           <input id="order-address" placeholder="Адрес доставки">
         </div>
-
-        ${MOCK_MODE ? `<div class="notice">MOCK-режим (без отправки)</div>` : ""}
 
         <button onclick="confirmOrder()">Оформить заказ</button>
         <button class="secondary" onclick="clearCart()">Очистить</button>
@@ -170,7 +173,6 @@ document.addEventListener("DOMContentLoaded", function () {
   window.clearCart = function () {
     if (!confirm("Очистить корзину?")) return;
     cart = {};
-    halfSlabNoticeShown = false;
     updateCartButton();
     closeCart();
   };
@@ -180,39 +182,41 @@ document.addEventListener("DOMContentLoaded", function () {
     if (overlay) overlay.remove();
   };
 
-  // ===== CONFIRM ORDER =====
+  // ===== SEND ORDER =====
   window.confirmOrder = function () {
-    const name = document.getElementById("order-name")?.value.trim();
-    const phone = document.getElementById("order-phone")?.value.trim();
-    const address = document.getElementById("order-address")?.value.trim();
+    const name = document.getElementById("order-name").value.trim();
+    const phone = document.getElementById("order-phone").value.trim();
+    const address = document.getElementById("order-address").value.trim();
 
     if (!name || !phone || !address) {
-      alert("Пожалуйста, заполните имя, телефон и адрес");
+      alert("Заполните имя, телефон и адрес");
       return;
     }
 
-    let summary = "Подтвердите заказ:\n\n";
-    let total = 0;
-
+    const cartArray = [];
     for (const item in cart) {
-      summary += `${item} × ${cart[item].qty} = ${cart[item].price * cart[item].qty} ₽\n`;
-      total += cart[item].price * cart[item].qty;
+      for (let i = 0; i < cart[item].qty; i++) {
+        cartArray.push({ name: item, price: cart[item].price });
+      }
     }
 
-    summary += `\n${name}\n${phone}\n${address}`;
-    summary += `\n\nИтого: ${total} ₽`;
-
-    if (!confirm(summary)) return;
-
-    if (MOCK_MODE) {
-      alert("✅ MOCK: заказ принят (ничего не отправляли)");
-      cart = {};
-      updateCartButton();
-      closeCart();
-      return;
-    }
-
-    // 👉 тут позже будет реальный fetch на backend
+    fetch(API + "/order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        phone,
+        address,
+        cart: cartArray
+      })
+    })
+      .then(() => {
+        alert("Заказ отправлен ✅");
+        cart = {};
+        updateCartButton();
+        closeCart();
+      })
+      .catch(() => alert("Ошибка отправки заказа"));
   };
 
 });
