@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", function () {
   console.log("SCRIPT LOADED (PRODUCTION)");
 
   // ===== API =====
-  const API = "https://tribal-rather-bras-crucial.trycloudflare.com";
+  const API = "https://ikra-fish.ru";
 
   let cart = {};
   let halfSlabNoticeShown = false;
@@ -20,6 +20,7 @@ document.addEventListener("DOMContentLoaded", function () {
     .then(res => res.json())
     .then(data => {
       const catalog = document.getElementById("catalog");
+      if (!catalog) return;
       catalog.innerHTML = "";
 
       for (const category in data) {
@@ -86,8 +87,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function openCart() {
-    let overlay = document.getElementById("cart-overlay");
-    if (overlay) overlay.remove();
+    document.getElementById("cart-overlay")?.remove();
 
     let items = "";
     let total = 0;
@@ -95,6 +95,7 @@ document.addEventListener("DOMContentLoaded", function () {
     for (const name in cart) {
       const i = cart[name];
       total += i.price * i.qty;
+
       items += `
         <div class="cart-item">
           <span>${name}</span>
@@ -107,7 +108,7 @@ document.addEventListener("DOMContentLoaded", function () {
       `;
     }
 
-    overlay = document.createElement("div");
+    const overlay = document.createElement("div");
     overlay.id = "cart-overlay";
     overlay.className = "cart-modal active";
     overlay.innerHTML = `
@@ -115,7 +116,7 @@ document.addEventListener("DOMContentLoaded", function () {
         <h3>Ваш заказ</h3>
 
         <div style="max-height:40vh;overflow-y:auto">
-          ${items}
+          ${items || "<p>Корзина пустая</p>"}
         </div>
 
         <div class="cart-total">Итого: ${total} ₽</div>
@@ -145,9 +146,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // ===== SEND ORDER =====
   window.confirmOrder = function () {
-    const name = order-name.value.trim();
-    const phone = order-phone.value.trim();
-    const address = order-address.value.trim();
+    const name = document.getElementById("order-name").value.trim();
+    const phone = document.getElementById("order-phone").value.trim();
+    const address = document.getElementById("order-address").value.trim();
 
     if (!name || !phone || !address) {
       alert("Заполните все поля");
@@ -163,20 +164,23 @@ document.addEventListener("DOMContentLoaded", function () {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        name, phone, address,
+        name,
+        phone,
+        address,
         cart: cartData,
         tg_id: tgUser?.id,
         tg_username: tgUser?.username,
         tg_name: tgUser?.first_name
       })
     })
-    .then(() => {
-      alert("Заказ отправлен ✅");
-      cart = {};
-      updateCartButton();
-      closeCart();
-    })
-    .catch(() => alert("Ошибка отправки"));
+      .then(res => {
+        if (!res.ok) throw new Error();
+        alert("Заказ отправлен ✅");
+        cart = {};
+        updateCartButton();
+        closeCart();
+      })
+      .catch(() => alert("Ошибка отправки заказа"));
   };
 
 });
